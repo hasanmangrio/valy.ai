@@ -88,14 +88,24 @@ function parseEmail(message) {
   const body = extractBody(message.payload);
   const full = `${subject}\n${body}`;
 
-  // OTP code detection — ordered most specific to least
-  const otpPatterns = [
-    /(?:code|otp|pin|passcode|verification|one.time|token)[^\d]{0,30}([0-9]{4,8})\b/i,
-    /\b([0-9]{6})\b/,
-    /\b([0-9]{4,8})\b/,
+  // ── OTP code detection ──────────────────────────────────────────────────
+
+  // 1. Hyphenated codes like "6493-865395" (govt/enterprise MFA)
+  const hyphenMatch = full.match(/\b(\d{4}-\d{6})\b/);
+  if (hyphenMatch) return { type: 'code', code: hyphenMatch[1], subject, from };
+
+  // 2. Spaced 3+3 codes like Squarespace's "308 044"
+  const spacedMatch = full.match(/\b(\d{3})\s(\d{3})\b/);
+  if (spacedMatch) return { type: 'code', code: spacedMatch[1] + spacedMatch[2], subject, from };
+
+  // 3. Explicit context + code (most reliable — ordered specific to loose)
+  const contextPatterns = [
+    /(?:code|otp|pin|passcode|verification|one.time|token|single.use|passcode|temporary)[^\d]{0,30}([0-9]{4,8})\b/i,
+    /\b([0-9]{6})\b/,   // standalone 6-digit (most common OTP length)
+    /\b([0-9]{4,8})\b/, // any 4-8 digit run as last resort
   ];
 
-  for (const re of otpPatterns) {
+  for (const re of contextPatterns) {
     const m = full.match(re);
     if (m) {
       const code = m[1];
@@ -104,7 +114,7 @@ function parseEmail(message) {
     }
   }
 
-  // Action link detection
+  // ── Action link detection ───────────────────────────────────────────────
   const links = [...(full.match(/https?:\/\/[^\s"'<>{}|\\^`[\]]+/gi) || [])];
   const actionKeywords = /verify|confirm|activate|reset|password|magic|login|signin|validate|click/i;
   const link = links.find(l => actionKeywords.test(l) && l.length < 2000);

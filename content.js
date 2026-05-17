@@ -50,24 +50,34 @@
     const fromRaw = payload.from || '';
     const senderName = (fromRaw.match(/^"?([^"<]+)"?\s*</) || [])[1]?.trim() || fromRaw.split('@')[0] || 'Inbox';
 
+    const fontUrl = chrome.runtime.getURL('fonts/Manrope.woff2');
+
     shadow.innerHTML = `
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
+@font-face{
+  font-family:'Manrope';
+  src:url('${fontUrl}') format('woff2');
+  font-weight:100 900;
+  font-style:normal;
+  font-display:block;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Manrope',sans-serif}
 .card{
-  background:linear-gradient(145deg,#7B2FF7 0%,#A259FF 100%);
-  border-radius:0 0 22px 22px;
-  padding:14px 18px 18px;
-  min-width:270px;max-width:320px;
+  background:linear-gradient(150deg,#7B2FF7 0%,#A45EFF 100%);
+  border-radius:20px;
+  margin-top:10px;
+  padding:16px 18px 18px;
+  min-width:276px;max-width:320px;
   box-shadow:0 24px 64px rgba(123,47,247,.45),0 8px 24px rgba(0,0,0,.18);
   pointer-events:all;
   animation:slideDown .42s cubic-bezier(.34,1.56,.64,1) both;
   transform-origin:top center;
 }
 .card.out{animation:slideUp .32s cubic-bezier(.55,0,.65,-0.4) both}
-@keyframes slideDown{from{transform:translateY(-112%);opacity:0}to{transform:translateY(0);opacity:1}}
-@keyframes slideUp{from{transform:translateY(0);opacity:1}to{transform:translateY(-112%);opacity:0}}
+@keyframes slideDown{from{transform:translateY(-120%);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes slideUp{from{transform:translateY(0);opacity:1}to{transform:translateY(-120%);opacity:0}}
 
-.row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .brand{display:flex;align-items:center;gap:7px}
 .brand-icon{
   width:26px;height:26px;
@@ -76,36 +86,33 @@
   display:flex;align-items:center;justify-content:center;
   font-size:14px;line-height:1;
 }
-.brand-name{color:rgba(255,255,255,.92);font-size:13px;font-weight:700;letter-spacing:.2px;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+.brand-name{color:rgba(255,255,255,.92);font-size:13px;font-weight:700;letter-spacing:.1px}
 .close{
-  width:22px;height:22px;border-radius:50%;border:none;cursor:pointer;
+  width:24px;height:24px;border-radius:50%;border:none;cursor:pointer;
   background:rgba(255,255,255,.18);color:rgba(255,255,255,.85);
   font-size:12px;display:flex;align-items:center;justify-content:center;
   transition:background .15s;padding:0;line-height:1;
 }
 .close:hover{background:rgba(255,255,255,.3)}
 
-.eyebrow{color:rgba(255,255,255,.65);font-size:11px;font-weight:600;letter-spacing:.9px;text-transform:uppercase;margin-bottom:5px;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+.eyebrow{color:rgba(255,255,255,.65);font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px}
 .code-val{
-  font-size:46px;font-weight:800;color:#fff;
-  letter-spacing:7px;line-height:1;
-  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
+  font-size:48px;font-weight:800;color:#fff;
+  letter-spacing:6px;line-height:1;
   margin-bottom:16px;
 }
 .subject{
   font-size:12px;color:rgba(255,255,255,.72);
   margin-bottom:14px;line-height:1.4;
-  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 
 .btn{
   width:100%;background:rgba(255,255,255,.95);
   color:#6B1FE8;border:none;border-radius:13px;
-  padding:12px 16px;font-size:14px;font-weight:700;
+  padding:13px 16px;font-size:14px;font-weight:700;
   cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
   transition:background .15s,transform .1s;
-  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
   letter-spacing:.1px;
 }
 .btn:hover{background:#fff;transform:translateY(-1px)}
