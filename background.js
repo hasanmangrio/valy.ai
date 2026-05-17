@@ -151,13 +151,6 @@ async function checkGmail() {
 
     if (!best) return;
 
-    // Archive + mark read for all fresh emails (clean inbox regardless)
-    await Promise.all(fresh.map(({ id }) =>
-      gapi(`/messages/${id}/modify`, {
-        method: 'POST',
-        body: JSON.stringify({ removeLabelIds: ['UNREAD', 'INBOX'] }),
-      }).catch(() => {})
-    ));
 
     // Push the single best result to the active focused tab
     const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
