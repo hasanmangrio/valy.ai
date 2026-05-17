@@ -50,17 +50,14 @@
     const fromRaw = payload.from || '';
     const senderName = (fromRaw.match(/^"?([^"<]+)"?\s*</) || [])[1]?.trim() || fromRaw.split('@')[0] || 'Inbox';
 
-    const fontUrl = chrome.runtime.getURL('fonts/Manrope.woff2');
+    const fontBase = chrome.runtime.getURL('fonts/');
 
     shadow.innerHTML = `
 <style>
-@font-face{
-  font-family:'Manrope';
-  src:url('${fontUrl}') format('woff2');
-  font-weight:100 900;
-  font-style:normal;
-  font-display:block;
-}
+@font-face{font-family:'Manrope';src:url('${fontBase}Manrope-400.woff2') format('woff2');font-weight:400;font-style:normal;font-display:block}
+@font-face{font-family:'Manrope';src:url('${fontBase}Manrope-500.woff2') format('woff2');font-weight:500;font-style:normal;font-display:block}
+@font-face{font-family:'Manrope';src:url('${fontBase}Manrope-700.woff2') format('woff2');font-weight:700;font-style:normal;font-display:block}
+@font-face{font-family:'Manrope';src:url('${fontBase}Manrope-800.woff2') format('woff2');font-weight:800;font-style:normal;font-display:block}
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Manrope',sans-serif}
 .card{
   background:linear-gradient(150deg,#7B2FF7 0%,#A45EFF 100%);
@@ -86,7 +83,7 @@
   display:flex;align-items:center;justify-content:center;
   font-size:14px;line-height:1;
 }
-.brand-name{color:rgba(255,255,255,.92);font-size:13px;font-weight:700;letter-spacing:.1px}
+.brand-name{color:rgba(255,255,255,.92);font-size:13px;font-weight:700;letter-spacing:0}
 .close{
   width:24px;height:24px;border-radius:50%;border:none;cursor:pointer;
   background:rgba(255,255,255,.18);color:rgba(255,255,255,.85);
@@ -95,10 +92,10 @@
 }
 .close:hover{background:rgba(255,255,255,.3)}
 
-.eyebrow{color:rgba(255,255,255,.65);font-size:12px;font-weight:500;letter-spacing:0;margin-bottom:6px}
+.eyebrow{color:rgba(255,255,255,.6);font-size:12px;font-weight:400;letter-spacing:0;margin-bottom:4px}
 .code-val{
   font-size:52px;font-weight:800;color:#fff;
-  letter-spacing:2px;line-height:1;
+  letter-spacing:1px;line-height:1;
   margin-bottom:16px;
 }
 .subject{
@@ -110,10 +107,10 @@
 .btn{
   width:100%;background:rgba(255,255,255,.95);
   color:#6B1FE8;border:none;border-radius:13px;
-  padding:13px 16px;font-size:14px;font-weight:700;
+  padding:13px 16px;font-size:15px;font-weight:700;
   cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
   transition:background .15s,transform .1s;
-  letter-spacing:.1px;
+  letter-spacing:0;
 }
 .btn:hover{background:#fff;transform:translateY(-1px)}
 .btn:active{transform:translateY(0) scale(.98)}
