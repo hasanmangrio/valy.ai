@@ -95,10 +95,10 @@
 }
 .close:hover{background:rgba(255,255,255,.3)}
 
-.eyebrow{color:rgba(255,255,255,.65);font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px}
+.eyebrow{color:rgba(255,255,255,.65);font-size:12px;font-weight:500;letter-spacing:0;margin-bottom:6px}
 .code-val{
-  font-size:48px;font-weight:800;color:#fff;
-  letter-spacing:6px;line-height:1;
+  font-size:52px;font-weight:800;color:#fff;
+  letter-spacing:2px;line-height:1;
   margin-bottom:16px;
 }
 .subject{
@@ -127,7 +127,11 @@
 <div class="card" id="card">
   <div class="row">
     <div class="brand">
-      <div class="brand-icon">⚡</div>
+      <div class="brand-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </div>
       <span class="brand-name">Valy</span>
     </div>
     <button class="close" id="close" aria-label="Dismiss">✕</button>
@@ -142,7 +146,7 @@
            <rect x="9" y="9" width="13" height="13" rx="2"/>
            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
          </svg>
-         Copy code
+         Copy
        </button>`
     : `<div class="subject">${escHtml(payload.subject || 'Verification link')}</div>
        <button class="btn" id="action">
