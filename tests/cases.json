@@ -1,0 +1,113 @@
+[
+  {
+    "id": "TC-01",
+    "name": "Microsoft — explicit context phrase",
+    "source": "account-security-noreply@accountprotection.microsoft.com",
+    "subject": "Your single-use code",
+    "body": "Hi hasan.mangrio@gmail.com, We received your request for a single-use code to use with your Microsoft account. Your single-use code is: 847291 Only enter this code on an official website or app.",
+    "expectedType": "code",
+    "expectedValue": "847291"
+  },
+  {
+    "id": "TC-02",
+    "name": "Squarespace — spaced 3+3 digit format",
+    "source": "no-reply@squarespace.com",
+    "subject": "Squarespace Verification Code",
+    "body": "Squarespace Account Information Verification Code Please use the following verification code to log in to Squarespace: 308 044 If you need assistance, please visit the Squarespace Help Center.",
+    "expectedType": "code",
+    "expectedValue": "308044",
+    "notes": "Squarespace formats codes as 'NNN NNN' with a space. Parser must join them."
+  },
+  {
+    "id": "TC-03",
+    "name": "RentCafe — code leads the sentence",
+    "source": "no-reply@rentcafe.com",
+    "subject": "OTP for login",
+    "body": "Dear Hasan, 364813 is your one-time password (OTP) for login. It is valid for 10 minutes. Please do not share OTP with others.",
+    "expectedType": "code",
+    "expectedValue": "364813"
+  },
+  {
+    "id": "TC-04",
+    "name": "MyChart — standalone code, no surrounding context words",
+    "source": "evergreenhealth_noreply@evergreenhealthcare.org",
+    "subject": "MyChart Verification Code",
+    "body": "Hello Hasan! When prompted, enter the code below to finish authenticating with MyChart. 570022 Your code will expire after 30 minutes.",
+    "expectedType": "code",
+    "expectedValue": "570022"
+  },
+  {
+    "id": "TC-05",
+    "name": "SAW — hyphenated government MFA code",
+    "source": "help@secureaccess.wa.gov",
+    "subject": "SAW MFA Code",
+    "body": "Authentication code\nCódigo de autorización multifactorial\n6493-865395",
+    "expectedType": "code",
+    "expectedValue": "6493-865395",
+    "notes": "State/govt portals use a NNNN-NNNNNN hyphenated format."
+  },
+  {
+    "id": "TC-06",
+    "name": "Nusuk — 4-digit code in square brackets",
+    "source": "noreply@eatmarna.haj.gov.sa",
+    "subject": "Nusuk-Verification Code",
+    "body": "Hello, Your verification code is [8016]. Enter this code in the Nusuk app to activate your account.",
+    "expectedType": "code",
+    "expectedValue": "8016"
+  },
+  {
+    "id": "TC-07",
+    "name": "Qatar Airways — OTP with extended context gap",
+    "source": "ebooking@qatarairways.com.qa",
+    "subject": "Your one-time pin",
+    "body": "Qatar Airways Here's the OTP you requested Please use the below one-time pin (OTP) to view your trip. 159538 This OTP will be valid for 5 minutes.",
+    "expectedType": "code",
+    "expectedValue": "159538",
+    "notes": "Context keyword 'pin' appears, but >30 chars before the number. Falls through to standalone 6-digit match."
+  },
+  {
+    "id": "TC-08",
+    "name": "Marriott — 'temporary code' phrase",
+    "source": "online.account@marriott.com",
+    "subject": "Your Temporary Code Request",
+    "body": "You recently requested a temporary code in order to complete an Account transaction. To authorize and proceed with your transaction, please enter the following code on your screen: 691675.",
+    "expectedType": "code",
+    "expectedValue": "691675"
+  },
+  {
+    "id": "TC-09",
+    "name": "EA — code in subject line",
+    "source": "EA@e.ea.com",
+    "subject": "Your EA Security Code is: 936899",
+    "body": "Your EA Security Code: 936899 If you didn't request this code, please go to your My Account page and change your password immediately.",
+    "expectedType": "code",
+    "expectedValue": "936899"
+  },
+  {
+    "id": "TC-10",
+    "name": "Workday candidate — account activation link",
+    "source": "globalhr@myworkday.com",
+    "subject": "Verify your candidate account",
+    "body": "Click this link to confirm your email address and complete setup for your candidate account https://globalhr.wd5.myworkdayjobs.com/REC_RTX_Ext_Gateway/activate/abc123",
+    "expectedType": "link",
+    "expectedValue": "https://globalhr.wd5.myworkdayjobs.com/REC_RTX_Ext_Gateway/activate/abc123"
+  },
+  {
+    "id": "TC-11",
+    "name": "Generic — magic login link",
+    "source": "noreply@example.com",
+    "subject": "Your magic login link",
+    "body": "Hi Hasan, Here is your magic login link. Click it to sign in instantly. https://example.com/magic-login?token=mgl_9f8d7e6c5b4a3210fedcba This link expires in 15 minutes.",
+    "expectedType": "link",
+    "expectedValue": "https://example.com/magic-login?token=mgl_9f8d7e6c5b4a3210fedcba"
+  },
+  {
+    "id": "TC-12",
+    "name": "Lemonade — 'password' as code label (unusual phrasing)",
+    "source": "maya.ai@lemonade.com",
+    "subject": "Your password",
+    "body": "Hi Hasan, Here's your one-time password. Use it to log in: 286900 If it wasn't you trying to log in, just ignore this email.",
+    "expectedType": "code",
+    "expectedValue": "286900"
+  }
+]

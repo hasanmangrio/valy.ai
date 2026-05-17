@@ -126,6 +126,9 @@ function parseEmail(message) {
 // ─── Core check ──────────────────────────────────────────────────────────────
 
 let checking = false;
+// Resets on every service worker restart, which is intentional —
+// we re-snapshot the inbox each time so stale emails are never surfaced.
+let initialized = false;
 
 async function checkGmail() {
   if (checking) return;
@@ -133,36 +136,45 @@ async function checkGmail() {
   try {
     const { processedIds = [] } = await chrome.storage.local.get('processedIds');
 
-    // Only look at emails that arrived in the last 2 minutes to avoid
-    // surfacing old inbox messages or batching up multiple codes at once.
-    const since = Math.floor((Date.now() - 2 * 60 * 1000) / 1000);
-    const data = await gapi(`/messages?q=is:unread+in:inbox+after:${since}&maxResults=10`);
+    // No time filter: Gmail's search index lags several minutes for new mail,
+    // so after:timestamp was silently dropping emails that just arrived.
+    // processedIds handles deduplication instead.
+    const data = await gapi('/messages?q=is:unread+in:inbox&maxResults=25');
     const messages = data.messages || [];
+
+    if (!initialized) {
+      // First poll after startup: silently mark all current unread inbox emails
+      // as seen so we never surface stale messages. Only arrivals after this
+      // point will trigger an overlay.
+      const unseenIds = messages.map(m => m.id).filter(id => !processedIds.includes(id));
+      if (unseenIds.length) {
+        await chrome.storage.local.set({
+          processedIds: [...unseenIds, ...processedIds].slice(0, 1000),
+        });
+      }
+      initialized = true;
+      return;
+    }
+
     const fresh = messages.filter(m => !processedIds.includes(m.id));
     if (!fresh.length) return;
 
-    // Mark all fresh IDs processed up front so concurrent polls don't duplicate
+    // Mark fresh IDs processed immediately so concurrent polls can't duplicate
     for (const { id } of fresh) processedIds.unshift(id);
     await chrome.storage.local.set({ processedIds: processedIds.slice(0, 1000) });
 
-    // Find the single best transactional match across all fresh emails
+    // Find the single best transactional match (code beats link)
     let best = null;
-    let bestId = null;
     for (const { id } of fresh) {
       const message = await gapi(`/messages/${id}?format=full`);
       const result = parseEmail(message);
       if (!result) continue;
-      // Prefer explicit OTP code matches over link matches
-      if (!best || (result.type === 'code' && best.type === 'link')) {
-        best = result;
-        bestId = id;
-      }
+      if (!best || (result.type === 'code' && best.type === 'link')) best = result;
     }
 
     if (!best) return;
 
-
-    // Push the single best result to the active focused tab
+    // Push to the active focused tab
     const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
     if (tab?.id && tab.url && !tab.url.startsWith('chrome://')) {
       chrome.tabs.sendMessage(tab.id, { type: 'VALY_CODE', payload: best }).catch(() => {});
