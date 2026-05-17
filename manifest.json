@@ -36,6 +36,12 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
+  "web_accessible_resources": [
+    {
+      "resources": ["fonts/Manrope.woff2"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "oauth2": {
     "client_id": "327755959982-3g0i311rsnvfd68jnrgpba6l2vpb6lr6.apps.googleusercontent.com",
     "scopes": ["https://www.googleapis.com/auth/gmail.readonly"]
