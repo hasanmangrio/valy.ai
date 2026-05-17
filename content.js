@@ -113,7 +113,7 @@
 .btn.done{background:rgba(255,255,255,.65);color:rgba(107,31,232,.65);cursor:default}
 
 .timer{height:3px;background:rgba(255,255,255,.18);border-radius:2px;margin-top:14px;overflow:hidden}
-.timer-fill{height:100%;background:rgba(255,255,255,.55);width:100%;animation:drain 30s linear both}
+.timer-fill{height:100%;background:rgba(255,255,255,.55);width:100%;animation:drain 60s linear both}
 @keyframes drain{from{width:100%}to{width:0%}}
 </style>
 
@@ -167,7 +167,7 @@
     });
 
     document.documentElement.appendChild(overlayHost);
-    dismissTimer = setTimeout(() => removeOverlay(), 30000);
+    dismissTimer = setTimeout(() => removeOverlay(), 60000);
   }
 
   function removeOverlay(instant = false) {

@@ -122,31 +122,47 @@ async function checkGmail() {
   checking = true;
   try {
     const { processedIds = [] } = await chrome.storage.local.get('processedIds');
-    const data = await gapi('/messages?q=is:unread+in:inbox&maxResults=10');
+
+    // Only look at emails that arrived in the last 2 minutes to avoid
+    // surfacing old inbox messages or batching up multiple codes at once.
+    const since = Math.floor((Date.now() - 2 * 60 * 1000) / 1000);
+    const data = await gapi(`/messages?q=is:unread+in:inbox+after:${since}&maxResults=10`);
     const messages = data.messages || [];
     const fresh = messages.filter(m => !processedIds.includes(m.id));
     if (!fresh.length) return;
 
-    for (const { id } of fresh) {
-      // Mark processed immediately to prevent double-processing
-      processedIds.unshift(id);
-      await chrome.storage.local.set({ processedIds: processedIds.slice(0, 1000) });
+    // Mark all fresh IDs processed up front so concurrent polls don't duplicate
+    for (const { id } of fresh) processedIds.unshift(id);
+    await chrome.storage.local.set({ processedIds: processedIds.slice(0, 1000) });
 
+    // Find the single best transactional match across all fresh emails
+    let best = null;
+    let bestId = null;
+    for (const { id } of fresh) {
       const message = await gapi(`/messages/${id}?format=full`);
       const result = parseEmail(message);
       if (!result) continue;
+      // Prefer explicit OTP code matches over link matches
+      if (!best || (result.type === 'code' && best.type === 'link')) {
+        best = result;
+        bestId = id;
+      }
+    }
 
-      // Archive + mark read right away
-      await gapi(`/messages/${id}/modify`, {
+    if (!best) return;
+
+    // Archive + mark read for all fresh emails (clean inbox regardless)
+    await Promise.all(fresh.map(({ id }) =>
+      gapi(`/messages/${id}/modify`, {
         method: 'POST',
         body: JSON.stringify({ removeLabelIds: ['UNREAD', 'INBOX'] }),
-      });
+      }).catch(() => {})
+    ));
 
-      // Push to active focused tab
-      const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-      if (tab?.id && tab.url && !tab.url.startsWith('chrome://')) {
-        chrome.tabs.sendMessage(tab.id, { type: 'VALY_CODE', payload: result }).catch(() => {});
-      }
+    // Push the single best result to the active focused tab
+    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    if (tab?.id && tab.url && !tab.url.startsWith('chrome://')) {
+      chrome.tabs.sendMessage(tab.id, { type: 'VALY_CODE', payload: best }).catch(() => {});
     }
   } catch (err) {
     if (!['No token', 'Token expired'].some(s => err.message.includes(s))) {
