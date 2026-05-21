@@ -24,9 +24,12 @@ function parseEmail({ subject, body: rawBody }) {
 
   // 3. Context + code
   const contextPatterns = [
+    // Context keyword present → allow 4-8 digits
     /(?:code|otp|pin|passcode|verification|one.time|token|single.use|temporary)[^\d]{0,30}([0-9]{4,8})\b/i,
+    // No context but exactly 6 digits — the universal OTP length
     /\b([0-9]{6})\b/,
-    /\b([0-9]{4,8})\b/,
+    // 7-8 digit codes; skip 4-5 without context to avoid Hijri years, etc.
+    /\b([0-9]{7,8})\b/,
   ];
   for (const re of contextPatterns) {
     const m = full.match(re);

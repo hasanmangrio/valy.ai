@@ -1,10 +1,22 @@
 (function () {
   'use strict';
 
-  // Don't run in iframes
   if (window !== window.top) return;
 
-  // ─── Keepalive port → background polls Gmail every 10s ───────────────────
+  // ─── Inject Manrope into the main document so shadow DOM can use it ──────
+  // @font-face inside shadow roots is unreliable in Chrome — main doc is the fix.
+  function ensureFonts() {
+    if (document.getElementById('valy-fonts')) return;
+    const fontBase = chrome.runtime.getURL('fonts/');
+    const s = document.createElement('style');
+    s.id = 'valy-fonts';
+    s.textContent = [400, 500, 700, 800].map(w =>
+      `@font-face{font-family:'ValyManrope';src:url('${fontBase}Manrope-${w}.woff2') format('woff2');font-weight:${w};font-display:block}`
+    ).join('');
+    (document.head || document.documentElement).appendChild(s);
+  }
+
+  // ─── Keepalive port → background polls Gmail every 10 s ──────────────────
 
   let port;
 
@@ -12,151 +24,178 @@
     try {
       port = chrome.runtime.connect({ name: 'valy-keepalive' });
       port.onDisconnect.addListener(() => setTimeout(connectPort, 2000));
-    } catch { /* extension context invalidated */ }
+    } catch { /* context invalidated */ }
   }
 
   connectPort();
-
   setInterval(() => {
-    try {
-      port?.postMessage({ type: 'POLL' });
-    } catch {
-      connectPort();
-    }
+    try { port?.postMessage({ type: 'POLL' }); }
+    catch { connectPort(); }
   }, 10000);
 
-  // ─── Overlay state ────────────────────────────────────────────────────────
+  // ─── Overlay ──────────────────────────────────────────────────────────────
 
   let overlayHost = null;
   let dismissTimer = null;
 
-  function escHtml(s) {
-    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  function esc(s) {
+    return String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   function showOverlay(payload) {
-    removeOverlay(true); // clear any existing one instantly
+    ensureFonts();
+    removeOverlay(true);
 
     overlayHost = document.createElement('div');
-    overlayHost.setAttribute('id', 'valy-host');
+    overlayHost.id = 'valy-host';
     overlayHost.style.cssText =
-      'position:fixed;top:0;right:24px;z-index:2147483647;pointer-events:none;';
+      'position:fixed;top:0;right:20px;z-index:2147483647;pointer-events:none;';
 
-    const shadow = overlayHost.attachShadow({ mode: 'closed' });
-
+    const shadow = overlayHost.attachShadow({ mode: 'open' });
     const isCode = payload.type === 'code';
-
-    // Derive a clean sender name
-    const fromRaw = payload.from || '';
-    const senderName = (fromRaw.match(/^"?([^"<]+)"?\s*</) || [])[1]?.trim() || fromRaw.split('@')[0] || 'Inbox';
-
-    const fontBase = chrome.runtime.getURL('fonts/');
 
     shadow.innerHTML = `
 <style>
-@font-face{font-family:'Manrope';src:url('${fontBase}Manrope-400.woff2') format('woff2');font-weight:400;font-style:normal;font-display:block}
-@font-face{font-family:'Manrope';src:url('${fontBase}Manrope-500.woff2') format('woff2');font-weight:500;font-style:normal;font-display:block}
-@font-face{font-family:'Manrope';src:url('${fontBase}Manrope-700.woff2') format('woff2');font-weight:700;font-style:normal;font-display:block}
-@font-face{font-family:'Manrope';src:url('${fontBase}Manrope-800.woff2') format('woff2');font-weight:800;font-style:normal;font-display:block}
-*{box-sizing:border-box;margin:0;padding:0;font-family:'Manrope',sans-serif}
-.card{
-  background:linear-gradient(150deg,#7B2FF7 0%,#A45EFF 100%);
-  border-radius:20px;
-  margin-top:10px;
-  padding:16px 18px 18px;
-  min-width:276px;max-width:320px;
-  box-shadow:0 24px 64px rgba(123,47,247,.45),0 8px 24px rgba(0,0,0,.18);
-  pointer-events:all;
-  animation:slideDown .42s cubic-bezier(.34,1.56,.64,1) both;
-  transform-origin:top center;
-}
-.card.out{animation:slideUp .32s cubic-bezier(.55,0,.65,-0.4) both}
-@keyframes slideDown{from{transform:translateY(-120%);opacity:0}to{transform:translateY(0);opacity:1}}
-@keyframes slideUp{from{transform:translateY(0);opacity:1}to{transform:translateY(-120%);opacity:0}}
+*{box-sizing:border-box;margin:0;padding:0}
 
-.row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.brand{display:flex;align-items:center;gap:7px}
-.brand-icon{
-  width:26px;height:26px;
-  background:rgba(255,255,255,.22);
-  border-radius:7px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:14px;line-height:1;
+.card{
+  font-family:'ValyManrope',sans-serif;
+  background:#8B2DE8;
+  border-radius:20px;
+  margin-top:12px;
+  width:320px;
+  padding:16px 16px 18px;
+  box-shadow:0 16px 48px rgba(100,20,200,.35);
+  pointer-events:all;
+  animation:drop .45s cubic-bezier(.34,1.56,.64,1) both;
 }
-.brand-name{color:rgba(255,255,255,.92);font-size:13px;font-weight:700;letter-spacing:0}
+.card.out{animation:rise .3s cubic-bezier(.55,0,.65,-.4) both}
+
+@keyframes drop{
+  from{transform:translateY(-115%);opacity:0}
+  to  {transform:translateY(0);opacity:1}
+}
+@keyframes rise{
+  from{transform:translateY(0);opacity:1}
+  to  {transform:translateY(-115%);opacity:0}
+}
+
+/* header row */
+.hdr{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:14px;
+}
+.icon{
+  width:28px;height:28px;
+  display:flex;align-items:center;justify-content:center;
+  opacity:.9;
+}
 .close{
-  width:24px;height:24px;border-radius:50%;border:none;cursor:pointer;
-  background:rgba(255,255,255,.18);color:rgba(255,255,255,.85);
-  font-size:12px;display:flex;align-items:center;justify-content:center;
-  transition:background .15s;padding:0;line-height:1;
+  width:28px;height:28px;border-radius:50%;
+  background:rgba(255,255,255,.18);
+  border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:13px;line-height:1;
+  transition:background .15s;
 }
 .close:hover{background:rgba(255,255,255,.3)}
 
-.eyebrow{color:rgba(255,255,255,.6);font-size:12px;font-weight:400;letter-spacing:0;margin-bottom:4px}
-.code-val{
-  font-size:52px;font-weight:800;color:#fff;
-  letter-spacing:1px;line-height:1;
-  margin-bottom:16px;
+/* body */
+.eyebrow{
+  text-align:center;
+  font-family:'ValyManrope',sans-serif;
+  font-weight:400;
+  font-size:13px;
+  color:rgba(255,255,255,.65);
+  margin-bottom:6px;
+  letter-spacing:0;
+}
+.code{
+  text-align:center;
+  font-family:'ValyManrope',sans-serif;
+  font-weight:800;
+  font-size:58px;
+  color:#fff;
+  line-height:1;
+  letter-spacing:1px;
+  margin-bottom:18px;
 }
 .subject{
-  font-size:12px;color:rgba(255,255,255,.72);
-  margin-bottom:14px;line-height:1.4;
+  text-align:center;
+  font-family:'ValyManrope',sans-serif;
+  font-weight:400;
+  font-size:13px;
+  color:rgba(255,255,255,.75);
+  margin-bottom:14px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 
+/* button */
 .btn{
-  width:100%;background:rgba(255,255,255,.95);
-  color:#6B1FE8;border:none;border-radius:13px;
-  padding:13px 16px;font-size:15px;font-weight:700;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
-  transition:background .15s,transform .1s;
+  width:100%;
+  background:#fff;
+  color:#8B2DE8;
+  border:none;
+  border-radius:12px;
+  padding:14px;
+  font-family:'ValyManrope',sans-serif;
+  font-weight:700;
+  font-size:15px;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:opacity .15s,transform .1s;
   letter-spacing:0;
 }
-.btn:hover{background:#fff;transform:translateY(-1px)}
+.btn:hover{opacity:.93;transform:translateY(-1px)}
 .btn:active{transform:translateY(0) scale(.98)}
-.btn.done{background:rgba(255,255,255,.65);color:rgba(107,31,232,.65);cursor:default}
+.btn.done{opacity:.6;cursor:default}
 
-.timer{height:3px;background:rgba(255,255,255,.18);border-radius:2px;margin-top:14px;overflow:hidden}
-.timer-fill{height:100%;background:rgba(255,255,255,.55);width:100%;animation:drain 60s linear both}
+/* timer bar */
+.bar{height:3px;background:rgba(255,255,255,.18);border-radius:2px;margin-top:14px;overflow:hidden}
+.bar-fill{height:100%;background:rgba(255,255,255,.5);animation:drain 60s linear both}
 @keyframes drain{from{width:100%}to{width:0%}}
 </style>
 
 <div class="card" id="card">
-  <div class="row">
-    <div class="brand">
-      <div class="brand-icon">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-        </svg>
-      </div>
-      <span class="brand-name">Valy</span>
+  <div class="hdr">
+    <div class="icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
     </div>
-    <button class="close" id="close" aria-label="Dismiss">✕</button>
+    <button class="close" id="close" aria-label="Close">✕</button>
   </div>
 
   <div class="eyebrow">From your inbox</div>
 
   ${isCode
-    ? `<div class="code-val">${escHtml(payload.code)}</div>
-       <button class="btn" id="action">
-         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
-           <rect x="9" y="9" width="13" height="13" rx="2"/>
-           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-         </svg>
-         Copy
-       </button>`
-    : `<div class="subject">${escHtml(payload.subject || 'Verification link')}</div>
-       <button class="btn" id="action">
-         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
-           <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-           <polyline points="15 3 21 3 21 9"/>
-           <line x1="10" y1="14" x2="21" y2="3"/>
-         </svg>
-         Open link
-       </button>`
+    ? `<div class="code">${esc(payload.code)}</div>`
+    : `<div class="subject">${esc(payload.subject || 'Verification link')}</div>`
   }
 
-  <div class="timer"><div class="timer-fill"></div></div>
+  <button class="btn" id="action">
+    ${isCode ? `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="9" width="13" height="13" rx="2"/>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+      </svg>
+      Copy
+    ` : `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+        <polyline points="15 3 21 3 21 9"/>
+        <line x1="10" y1="14" x2="21" y2="3"/>
+      </svg>
+      Open link
+    `}
+  </button>
+
+  <div class="bar"><div class="bar-fill"></div></div>
 </div>`;
 
     shadow.querySelector('#close').addEventListener('click', () => removeOverlay());
@@ -165,9 +204,9 @@
     btn.addEventListener('click', () => {
       if (isCode) {
         copyText(payload.code);
-        btn.innerHTML = '✓&nbsp; Copied!';
+        btn.innerHTML = '✓&nbsp;&nbsp;Copied!';
         btn.classList.add('done');
-        setTimeout(() => removeOverlay(), 1400);
+        setTimeout(() => removeOverlay(), 1500);
       } else {
         window.open(payload.link, '_blank', 'noopener,noreferrer');
         removeOverlay();
@@ -181,45 +220,31 @@
   function removeOverlay(instant = false) {
     clearTimeout(dismissTimer);
     if (!overlayHost) return;
-
-    if (instant) {
-      overlayHost.remove();
-      overlayHost = null;
-      return;
-    }
+    if (instant) { overlayHost.remove(); overlayHost = null; return; }
 
     const card = overlayHost.shadowRoot?.querySelector('#card');
     if (card) {
       card.classList.add('out');
-      card.addEventListener('animationend', () => {
-        overlayHost?.remove();
-        overlayHost = null;
-      }, { once: true });
+      card.addEventListener('animationend', () => { overlayHost?.remove(); overlayHost = null; }, { once: true });
     } else {
-      overlayHost.remove();
-      overlayHost = null;
+      overlayHost.remove(); overlayHost = null;
     }
   }
 
   function copyText(text) {
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(text).catch(() => legacyCopy(text));
-    } else {
-      legacyCopy(text);
-    }
+    navigator.clipboard?.writeText(text).catch(() => legacyCopy(text)) ?? legacyCopy(text);
   }
 
   function legacyCopy(text) {
-    const el = document.createElement('textarea');
-    el.value = text;
-    el.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+    const el = Object.assign(document.createElement('textarea'), {
+      value: text,
+      style: 'position:fixed;opacity:0;pointer-events:none',
+    });
     document.body.appendChild(el);
     el.select();
     try { document.execCommand('copy'); } catch { /* noop */ }
     document.body.removeChild(el);
   }
-
-  // ─── Listen for codes from background ────────────────────────────────────
 
   chrome.runtime.onMessage.addListener(msg => {
     if (msg.type === 'VALY_CODE') showOverlay(msg.payload);

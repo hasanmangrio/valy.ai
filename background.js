@@ -100,16 +100,20 @@ function parseEmail(message) {
 
   // 3. Explicit context + code (most reliable — ordered specific to loose)
   const contextPatterns = [
-    /(?:code|otp|pin|passcode|verification|one.time|token|single.use|passcode|temporary)[^\d]{0,30}([0-9]{4,8})\b/i,
-    /\b([0-9]{6})\b/,   // standalone 6-digit (most common OTP length)
-    /\b([0-9]{4,8})\b/, // any 4-8 digit run as last resort
+    // Context keyword present → allow 4-8 digits
+    /(?:code|otp|pin|passcode|verification|one.time|token|single.use|temporary)[^\d]{0,30}([0-9]{4,8})\b/i,
+    // No context but exactly 6 digits — the universal OTP length
+    /\b([0-9]{6})\b/,
+    // 7-8 digit codes (uncommon but exist); skip 4-5 without context to avoid
+    // matching Hijri years, phone fragments, postal codes, etc.
+    /\b([0-9]{7,8})\b/,
   ];
 
   for (const re of contextPatterns) {
     const m = full.match(re);
     if (m) {
       const code = m[1];
-      if (/^(19|20)\d{2}$/.test(code)) continue; // skip years
+      if (/^(19|20)\d{2}$/.test(code)) continue; // skip Gregorian years
       return { type: 'code', code, subject, from };
     }
   }
